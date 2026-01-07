@@ -14,7 +14,7 @@ pub fn handle_connection(mut stream: TcpStream) {
                 println!("[READ] {} bytes", n);
             }
             Err(e) => {
-                eprintln!("[ERROR] read failed: {}", e);
+                eprintln!("[error] read failed: {}", e);
                 break;
             }
         }
@@ -23,6 +23,17 @@ pub fn handle_connection(mut stream: TcpStream) {
 
 fn main() -> std::io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080")?;
+
+    for stream in listener.incoming() {
+        match stream {
+            Ok(stream) => {
+                handle_connection(stream);
+            }
+            Err(e) => {
+                eprintln!("[error] read failed: {}", e);
+            }
+        }
+    }
 
     println!("listener: {:?}", listener);
 
