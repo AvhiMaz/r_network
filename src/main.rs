@@ -1,11 +1,10 @@
-use std::io::Read;
-use std::net::{TcpListener, TcpStream};
+use tokio::io::AsyncReadExt;
+use tokio::net::{TcpListener, TcpStream};
 
-pub fn handle_connection(mut stream: TcpStream) {
+async fn handle_connection(mut stream: TcpStream) {
     let mut buf = [0u8; 4096];
-
     loop {
-        match stream.read(&mut buf) {
+        match stream.read(&mut buf).await {
             Ok(0) => {
                 println!("[CLOSE] connection closed");
                 break;
@@ -21,21 +20,16 @@ pub fn handle_connection(mut stream: TcpStream) {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                handle_connection(stream);
-            }
-            Err(e) => {
-                eprintln!("[error] read failed: {}", e);
-            }
-        }
+    loop {
+        let (stream, addr) = listener.accept().await?;
+        println!("[ACCEPT]: {:?}", addr);
+
+        tokio::spawn(async move {
+            handle_connection(stream).await;
+        });
     }
-
-    println!("listener: {:?}", listener);
-
-    Ok(())
 }
